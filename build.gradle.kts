@@ -21,7 +21,7 @@ version = pluginVersion
 println("pluginVersion=$version")
 
 plugins {
-    kotlin("jvm") version "1.9.0"
+    kotlin("jvm") version "1.9.22"
     id("org.jetbrains.intellij") version "1.16.0"
     id("org.jetbrains.grammarkit") version "2022.3.2"
     id("org.jetbrains.changelog") version "1.3.1"
