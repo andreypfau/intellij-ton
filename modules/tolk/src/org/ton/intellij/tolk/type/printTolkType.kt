@@ -47,6 +47,11 @@ fun PresentationTreeBuilder.printTolkType(type: TolkType) {
         }
 
         is TolkType.UnionType -> {
+            if (type.isNullable) {
+                printTolkType(type.elements.first { it != TolkType.Null })
+                text("?")
+                return
+            }
             val iterator = type.elements.iterator()
             while (iterator.hasNext()) {
                 val element = iterator.next()

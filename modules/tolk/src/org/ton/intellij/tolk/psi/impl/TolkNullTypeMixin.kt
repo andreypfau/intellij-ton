@@ -6,5 +6,5 @@ import org.ton.intellij.tolk.psi.TolkNullType
 import org.ton.intellij.tolk.type.TolkType
 
 abstract class TolkNullTypeMixin(node: ASTNode) : ASTWrapperPsiElement(node), TolkNullType {
-    override val type: TolkType get() = TolkType.Unknown
+    override val type: TolkType get() = TolkType.Null
 }

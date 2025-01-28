@@ -453,6 +453,7 @@ class TolkInferenceWalker(
             is TolkTupleExpression -> infer(element, expectedType)
             is TolkParenExpression -> infer(element, expectedType)
             is TolkTensorExpression -> infer(element, expectedType)
+            is TolkFieldExpression -> infer(element, expectedType)
             is TolkReferenceExpression -> infer(element)
             is TolkLiteralExpression -> element.type
             is TolkUnitExpression -> TolkType.Unit
@@ -551,12 +552,20 @@ class TolkInferenceWalker(
         element: TolkDotExpression,
         expectedType: TolkType? = null,
     ): TolkType? {
-        infer(element.left)
+        val leftType = infer(element.left)
         val type = element.right?.let { expression ->
-            if (expression is TolkCallExpression) {
-                infer(expression, expectedType, withFirstArg = element.left)
-            } else {
-                infer(expression, expectedType)
+            when (expression) {
+                is TolkCallExpression -> infer(expression, expectedType, withFirstArg = element.left)
+                is TolkIntegerExpression -> {
+                    val typeElementIndex = expression.integerLiteral.text.toIntOrNull() ?: return@let null
+                    val typeElements = when (leftType) {
+                        is TolkType.TypedTuple -> leftType.elements
+                        is TolkType.Tensor -> leftType.elements
+                        else -> null
+                    }
+                    typeElements?.getOrNull(typeElementIndex)
+                }
+                else -> null
             }
         }
         return ctx.setType(element, type ?: expectedType)
@@ -604,16 +613,19 @@ class TolkInferenceWalker(
                     unify(paramType.inputType, argType.inputType)
                     unify(paramType.returnType, argType.returnType)
                 }
+
                 paramType is TolkType.TypedTuple && argType is TolkType.TypedTuple -> {
                     paramType.elements.zip(argType.elements).forEach { (param, arg) ->
                         unify(param, arg)
                     }
                 }
+
                 paramType is TolkType.Tensor && argType is TolkType.Tensor -> {
                     paramType.elements.zip(argType.elements).forEach { (param, arg) ->
                         unify(param, arg)
                     }
                 }
+
                 paramType is TolkType.ParameterType && argType != null && argType !is TolkType.ParameterType -> {
                     typeMapping[paramType.psiElement] = argType
                 }
@@ -658,6 +670,19 @@ class TolkInferenceWalker(
             }
         )
     }
+
+//    private fun infer(element: TolkFieldExpression, expectedType: TolkType? = null): TolkType? {
+//        val expressions = element.expressionList
+//        val left = expressions.getOrNull(0) ?: return null
+//        val leftType = infer(left) ?: return null
+//        val typeElements = when (leftType) {
+//            is TolkType.Tensor -> leftType.elements
+//            is TolkType.TypedTuple -> leftType.elements
+//            else -> return null
+//        }
+//        val rightIndex = element.integerLiteral?.text?.toIntOrNull() ?: return null
+//        return ctx.setType(element, typeElements.getOrNull(rightIndex) ?: expectedType)
+//    }
 
     private fun infer(element: TolkTupleExpression, expectedType: TolkType? = null): TolkType? {
         val expectedTypes = (expectedType as? TolkType.TypedTuple)?.elements

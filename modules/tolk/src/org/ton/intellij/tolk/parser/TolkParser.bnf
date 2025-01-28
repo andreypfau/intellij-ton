@@ -506,8 +506,7 @@ Var ::= IDENTIFIER (':' TypeExpression)? {
     extends = VarDefinition
 }
 
-DotExpression ::= Expression '.' CallExpression {
-    pin=2
+DotExpression ::= Expression '.' (IntegerExpression|CallExpression) {
     methods=[
         left="/Expression[0]"
         right="/Expression[1]"
@@ -570,7 +569,7 @@ private TupleElement ::= Expression {
 }
 private TupleElement_recovery ::= !(','|']'|';')
 
-private IntegerExpression ::= INTEGER_LITERAL
+IntegerExpression ::= INTEGER_LITERAL
 private BoolExpression ::= 'true' | 'false'
 private NullExpression ::= 'null' !'('
 
@@ -626,8 +625,11 @@ TypeExpression ::= FunType | UnionType | AtomicType {
     ]
 }
 
-private AtomicType ::= AutoType | VoidType | TensorOrParenType | TupleType | NullType | TypeIdentifier
+private AtomicType ::= NullableType | AutoType | VoidType | TensorOrParenType | TupleType | NullType | TypeIdentifier
 
+NullableType ::= (TensorOrParenType|TupleType|TypeIdentifier) '?' {
+    mixin="org.ton.intellij.tolk.psi.impl.TolkNullableTypeMixin"
+}
 UnionType ::= unionType1 | unionType2
 NullType ::= 'null' {
     mixin="org.ton.intellij.tolk.psi.impl.TolkNullTypeMixin"

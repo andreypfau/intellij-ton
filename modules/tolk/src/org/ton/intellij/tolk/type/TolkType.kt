@@ -52,7 +52,19 @@ sealed interface TolkType {
     class UnionType(
         val elements: List<TolkType>
     ) : TolkType {
-        override fun toString(): String = elements.joinToString(" | ")
+        init {
+            check(elements.size > 1) { "UnionType must have at least two elements, got ${elements.size}: $elements" }
+        }
+        val hasNull = elements.any { it == Null }
+        val isNullable = elements.size == 2 && hasNull && !elements.all { it == Null }
+
+        override fun toString(): String {
+            return if (isNullable) {
+                "${elements.first { it != Null }}?"
+            } else {
+                elements.joinToString(" | ")
+            }
+        }
     }
 
     companion object {
@@ -64,6 +76,18 @@ sealed interface TolkType {
         val Tuple = TolkPrimitiveType.Tuple
         val Unit = TolkPrimitiveType.Unit
         val Bool = TolkPrimitiveType.Bool
+        val Null = TolkPrimitiveType.Null
+
+        fun nullable(element: TolkType): TolkType {
+            return if (element is UnionType) {
+                if (element.hasNull) element
+                else UnionType(element.elements + Null)
+            } else if (element != Null) {
+                UnionType(listOf(element, Null))
+            } else {
+                element
+            }
+        }
 
         fun create(vararg elements: TolkType): TolkType {
             return create(elements.toList())
@@ -100,6 +124,7 @@ sealed class TolkPrimitiveType(
     object Tuple : TolkPrimitiveType("tuple")
     object Unit : TolkPrimitiveType("()")
     object Bool : TolkPrimitiveType("bool")
+    object Null : TolkPrimitiveType("null")
 
     override fun toString(): String = name
 }
